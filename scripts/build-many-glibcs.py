@@ -495,6 +495,14 @@ class Context(object):
                                        'arch': 'sparcv9',
                                        'ccopts': '-m32 -mlong-double-128 -mcpu=v9',
                                        'cfg': ['--disable-multi-arch', '--disable-default-pie']}])
+        self.add_config(arch='tilegx',
+                        os_name='linux-gnu',
+                        glibcs=[{},
+                                {'variant': '32', 'ccopts': '-m32'}])
+        self.add_config(arch='tilegxbe',
+                        os_name='linux-gnu',
+                        glibcs=[{},
+                                {'variant': '32', 'ccopts': '-m32'}])
         self.add_config(arch='x86_64',
                         os_name='linux-gnu',
                         gcc_cfg=['--with-multilib-list=m64,m32,mx32'],
@@ -1386,6 +1394,7 @@ def install_linux_headers(policy, cmdlist):
                 'riscv64': 'riscv',
                 'sh': 'sh',
                 'sparc': 'sparc',
+                'tile': 'tile',
                 'x86_64': 'x86'}
     linux_arch = None
     for k in arch_map:
