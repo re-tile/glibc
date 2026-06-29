@@ -22,6 +22,18 @@
 #include <sysdeps/unix/sysv/linux/sysdep.h>
 #include <sys/syscall.h>
 
+/* Like every modern Linux port (aarch64, riscv, loongarch, csky), pull in
+   dl-sysdep.h and tls.h here.  tls.h drags in nptl/descr.h -> thread_db.h
+   -> pthread.h, so the C11 atomics, struct __timespec64 alias, and the
+   PTHREAD_PROCESS_* / CLOCK_* constants are visible to every syscall-layer
+   file before its body.  The pre-2018 tile sysdep.h lacked this, which is
+   why so many modern wrappers (sigtimedwait, arc4random, futex-internal)
+   saw undefined identifiers.  */
+#ifndef __ASSEMBLER__
+# include <dl-sysdep.h>
+# include <tls.h>
+#endif
+
 #undef SYS_ify
 #define SYS_ify(syscall_name)	__NR_##syscall_name
 
@@ -89,21 +101,6 @@
 #else /* not __ASSEMBLER__ */
 
 #include <errno.h>
-
-/* The Y2038 time64 syscall wrappers (sigtimedwait, ppoll, ...) use
-   struct __timespec64 in their signatures.  For a 64-bit-time arch it is
-   just an alias for struct timespec, defined here; pulling it in via the
-   syscall sysdep guarantees the alias is visible before any wrapper body,
-   which the tile include chain does not otherwise reach.  */
-#include <struct___timespec64.h>
-
-/* Likewise pull in the C11 atomic_load_relaxed / atomic_store_relaxed
-   helpers; several syscall-adjacent files (arc4random, ...) use them
-   without an explicit <atomic.h>, relying on a transitive include the
-   tile chain does not otherwise provide.  */
-#if !IS_IN (rtld)
-# include <atomic.h>
-#endif
 
 /* The TILE-Gx Linux kernel signals a failed system call by setting r1
    to the (positive) errno, leaving the raw result in r0.  Modern glibc

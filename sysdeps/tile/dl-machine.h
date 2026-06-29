@@ -28,6 +28,8 @@
 #include <bits/wordsize.h>
 #include <arch/icache.h>
 #include <arch/opcode.h>
+#include <dl-static-tls.h>
+#include <dl-machine-rel.h>
 
 /* Return nonzero iff ELF header is compatible with the running host.  */
 static inline int
@@ -106,7 +108,8 @@ _dl_flush_icache (const void *addr, unsigned long size)
    entries will jump to the on-demand fixup code in dl-runtime.c.  */
 
 static inline int __attribute__ ((unused))
-elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
+elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
+			   int lazy, int profile)
 {
   ElfW(Addr) *gotplt;
   extern void _dl_runtime_resolve (ElfW(Word));
@@ -130,6 +133,7 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
          intercept the calls to collect information.  In this case we don't
          store the address in the GOTPLT so that all future calls also end
          in this function.  */
+#ifdef SHARED
       if (__builtin_expect (profile, 0))
         {
           gotplt[1] = (ElfW(Addr)) &_dl_runtime_profile;
@@ -141,6 +145,7 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
             GL(dl_profile_map) = l;
         }
       else
+#endif
         /* This function will get called to fix up the GOTPLT entry
            indicated by the offset on the stack, and then jump to the
            resolved address.  */
@@ -186,9 +191,8 @@ elf_machine_runtime_setup (struct link_map *l, int lazy, int profile)
 /* A reloc type used for ld.so cmdline arg lookups to reject PLT entries.  */
 #define ELF_MACHINE_JMP_SLOT R_TILE(JMP_SLOT)
 
-/* TILE never uses Elf32_Rel relocations.  */
-#define ELF_MACHINE_NO_REL 1
-#define ELF_MACHINE_NO_RELA 0
+/* TILE is RELA-only; ELF_MACHINE_NO_REL/NO_RELA + PLTREL come from
+   <dl-machine-rel.h> (the generic RELA defaults match).  */
 
 /* We define an initialization functions.  This is called very early in
    _dl_sysdep_start.  */
@@ -388,33 +392,20 @@ static const struct reloc_howto howto[] =
 /* Perform the relocation specified by RELOC and SYM (which is fully resolved).
    MAP is the object containing the reloc.  */
 
-auto inline void __attribute__ ((always_inline))
-elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
+static inline void __attribute__ ((always_inline))
+elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
+		  const ElfW(Rela) *reloc,
 		  const ElfW(Sym) *sym, const struct r_found_version *version,
 		  void *const reloc_addr_arg, int skip_ifunc)
 {
   ElfW(Addr) *const reloc_addr = reloc_addr_arg;
   const unsigned int r_type = ELFW_R_TYPE (reloc->r_info);
 
-#if !defined RTLD_BOOTSTRAP || !defined HAVE_Z_COMBRELOC
   if (__builtin_expect (r_type == R_TILE(RELATIVE), 0))
     {
-# if !defined RTLD_BOOTSTRAP && !defined HAVE_Z_COMBRELOC
-      /* This is defined in rtld.c, but nowhere in the static libc.a;
-         make the reference weak so static programs can still link.
-         This declaration cannot be done when compiling rtld.c
-         (i.e. #ifdef RTLD_BOOTSTRAP) because rtld.c contains the
-         common defn for _dl_rtld_map, which is incompatible with a
-         weak decl in the same file.  */
-#  ifndef SHARED
-      weak_extern (GL(dl_rtld_map));
-#  endif
-      if (map != &GL(dl_rtld_map)) /* Already done in rtld itself.  */
-# endif
-        *reloc_addr = map->l_addr + reloc->r_addend;
+      *reloc_addr = map->l_addr + reloc->r_addend;
       return;
     }
-#endif
 
   if (__builtin_expect (r_type == R_TILE(NONE), 0))
     return;
@@ -422,7 +413,7 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
 #if !defined RTLD_BOOTSTRAP && !defined RESOLVE_CONFLICT_FIND_MAP
   const ElfW(Sym) *const refsym = sym;
 #endif
-  struct link_map *sym_map = RESOLVE_MAP (&sym, version, r_type);
+  struct link_map *sym_map = RESOLVE_MAP (map, scope, &sym, version, r_type);
   ElfW(Addr) value;
 
   if (sym == NULL)
@@ -665,7 +656,7 @@ elf_machine_rela (struct link_map *map, const ElfW(Rela) *reloc,
   _dl_flush_icache (p, sizeof (*p));
 }
 
-auto inline void __attribute__ ((always_inline))
+static inline void __attribute__ ((always_inline))
 elf_machine_rela_relative (ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
                            void *const reloc_addr_arg)
 {
@@ -673,8 +664,8 @@ elf_machine_rela_relative (ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
   *reloc_addr = l_addr + reloc->r_addend;
 }
 
-auto inline void __attribute__ ((always_inline))
-elf_machine_lazy_rel (struct link_map *map,
+static inline void __attribute__ ((always_inline))
+elf_machine_lazy_rel (struct link_map *map, struct r_scope_elem *scope[],
                       ElfW(Addr) l_addr, const ElfW(Rela) *reloc,
                       int skip_ifunc)
 {

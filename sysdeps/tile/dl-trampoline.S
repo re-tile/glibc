@@ -171,7 +171,7 @@
 	}
 	{
 	 ADDLI_PTR r3, sp, FRAME_RETVAL
-	 jal _dl_call_pltexit
+	 jal _dl_audit_pltexit
 	}
 	{
 	 ADDLI_PTR lr, sp, FRAME_LR
@@ -188,6 +188,8 @@ END (\name)
 	.endm
 
 	dl_resolve _dl_runtime_resolve, 0, FRAME_SIZE_SMALL
-#ifndef PROF
+/* The profiling trampoline calls _dl_profile_fixup, which only exists in
+   the shared loader; a static link has no profiling fixup to reference.  */
+#if !defined PROF && defined SHARED
 	dl_resolve _dl_runtime_profile, 1, FRAME_SIZE_LARGE
 #endif

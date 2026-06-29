@@ -1,6 +1,6 @@
-/* Copyright (C) 2011-2018 Free Software Foundation, Inc.
+/* Helpers for on-demand PLT fixup for shared objects.  TILE-Gx version.
+   Copyright (C) 2011-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
-   Contributed by Chris Metcalf <cmetcalf@tilera.com>, 2011.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -13,14 +13,19 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library.  If not, see
-   <http://www.gnu.org/licenses/>.  */
+   License along with the GNU C Library; if not, see
+   <https://www.gnu.org/licenses/>.  */
 
-#include <signal.h>
-#include <sigcontextinfo.h>
-
-static void
-__profil_counter (int signo, SIGCONTEXT scp)
+/* Like x86_64, the TILE PLT stubs pass the index of the relocation rather
+   than its offset, so we avoid recomputing the offset in the trampoline.  */
+static inline uintptr_t
+reloc_offset (uintptr_t plt0, uintptr_t pltn)
 {
-  profil_count ((void *) GET_PC (scp));
+  return pltn * sizeof (ElfW(Rela));
+}
+
+static inline uintptr_t
+reloc_index (uintptr_t plt0, uintptr_t pltn, size_t size)
+{
+  return pltn;
 }

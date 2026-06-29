@@ -16,12 +16,15 @@
    License along with the GNU C Library.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <arch/abi.h>
+#ifndef _SIGCONTEXTINFO_H
+#define _SIGCONTEXTINFO_H
 
-#define SIGCONTEXT siginfo_t *_si, ucontext_t *
-#define SIGCONTEXT_EXTRA_ARGS _si,
-#define GET_PC(ctx)	((void *) (long) ctx->uc_mcontext.pc)
-#define GET_FRAME(ctx)	((void *) (long) ctx->uc_mcontext.regs[TREG_FP])
-#define GET_STACK(ctx)	((void *) (long) ctx->uc_mcontext.sp)
-#define CALL_SIGHANDLER(handler, signo, ctx) \
-  (handler)((signo), SIGCONTEXT_EXTRA_ARGS (ctx))
+#include <sys/ucontext.h>
+
+static inline uintptr_t
+sigcontext_get_pc (const ucontext_t *ctx)
+{
+  return ctx->uc_mcontext.pc;
+}
+
+#endif

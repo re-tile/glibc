@@ -127,40 +127,30 @@ _start:
 	 /* Pass the highest stack address to user code. */
 	 ADDI_PTR r6, sp, (2 * REGSIZE)
 
-	 /* Pass address of main() in r0, and of our own entry
-	    points to .fini and .init in r3 and r4.  */
+	 /* Pass address of main() in r0.  glibc removed the init/fini
+	    arguments (__libc_csu_init/_fini); pass 0 for r3 and r4.  */
 	 moveli r0, hw2_last(main - .Lmy_pc)
 	}
 	{
 	 shl16insli r0, r0, hw1(main - .Lmy_pc)
-	 moveli r3, hw2_last(__libc_csu_init - .Lmy_pc)
+	 movei r3, 0
 	}
 	{
 	 shl16insli r0, r0, hw0(main - .Lmy_pc)
-	 shl16insli r3, r3, hw1(__libc_csu_init - .Lmy_pc)
+	 movei r4, 0
 	}
 	{
 	 ADD_PTR r0, r0, r13
-	 shl16insli r3, r3, hw0(__libc_csu_init - .Lmy_pc)
-	}
-	{
 	 moveli r12, hw2_last_plt(__libc_start_main - .Lmy_pc)
-	 ADD_PTR r3, r3, r13
 	}
 	{
 	 shl16insli r12, r12, hw1_plt(__libc_start_main - .Lmy_pc)
-	 moveli r4, hw2_last(__libc_csu_fini - .Lmy_pc)
 	}
 	{
 	 shl16insli r12, r12, hw0_plt(__libc_start_main - .Lmy_pc)
-	 shl16insli r4, r4, hw1(__libc_csu_fini - .Lmy_pc)
 	}
 	{
 	 ADD_PTR r12, r12, r13
-	 shl16insli r4, r4, hw0(__libc_csu_fini - .Lmy_pc)
-	}
-	{
-	 ADD_PTR r4, r4, r13
 #ifdef NO_PLT_PCREL
 	 j plt(__libc_start_main)
 #else

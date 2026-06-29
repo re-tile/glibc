@@ -52,29 +52,11 @@ ENTRY (_start)
 	/* Save returned start of user program address for later. */
 	move r50, r0
 
-	/* See if we were invoked explicitly with the dynamic loader,
-	   in which case we have to adjust the argument vector.  */
+	/* glibc no longer rewrites the argument vector in the loader
+	   (_dl_skip_args was removed); the kernel-provided stack at r52 is
+	   used as-is.  Establish the PC anchor that pic_addr resolves against.  */
 	lnk r51; .Llink:
-	pic_addr r4, _dl_skip_args
-	ld4u r4, r4
-	beqzt r4, .Lno_skip
 
-	/* Load the argc word at the initial sp and adjust it.
-	   We basically jump "sp" up over the first few argv entries
-	   and write "argc" a little higher up in memory, to be the
-	   base of the new kernel-initialized stack area.  */
-	LD_PTR r0, r52
-	{
-	 sub r0, r0, r4
-	 SHL_PTR_ADD r52, r4, r52
-	}
-	{
-	 ST_PTR r52, r0
-	 SHL_PTR_ADD sp, r4, sp
-	}
-	andi sp, sp, -8
-
-.Lno_skip:
 	/* Call_dl_init (_dl_loaded, argc, argv, envp).  See elf/start.s
 	   for the layout of memory here; r52 is pointing to "+0".  */
 	pic_addr r0, _rtld_local

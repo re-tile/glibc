@@ -141,16 +141,9 @@ register void *__tp_reg asm ("tp");
      = ((tcbhead_t *) ((char *) __tp_reg			      \
 		       - TLS_TCB_OFFSET))[-1].stack_guard)
 
-/* Set the pointer guard field in TCB head.  */
-# define THREAD_GET_POINTER_GUARD() \
-    (((tcbhead_t *) ((char *) __tp_reg				      \
-		     - TLS_TCB_OFFSET))[-1].pointer_guard)
-# define THREAD_SET_POINTER_GUARD(value) \
-    (THREAD_GET_POINTER_GUARD () = (value))
-# define THREAD_COPY_POINTER_GUARD(descr) \
-    (((tcbhead_t *) ((char *) (descr)					      \
-		     + TLS_PRE_TCB_SIZE))[-1].pointer_guard		      \
-     = THREAD_GET_POINTER_GUARD())
+/* Tile uses the global __pointer_chk_guard model (see pointer_guard.h),
+   not a TCB slot, so it deliberately does not define THREAD_*_POINTER_GUARD;
+   that lets csu/libc-start.c export __pointer_chk_guard_local.  */
 
 /* l_tls_offset == 0 is perfectly valid on Tile, so we have to use some
    different value to mean unset l_tls_offset.  */
