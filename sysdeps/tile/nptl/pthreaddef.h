@@ -28,8 +28,9 @@
 /* Minimal stack size after allocating thread descriptor and guard size.  */
 #define MINIMAL_REST_STACK	2048
 
-/* Alignment requirement for TCB.  */
-#define TCB_ALIGNMENT		16
+/* Alignment requirement for TCB.  Modern NPTL (nptl/descr.h) requires at
+   least 32 so the thread descriptor's aligned members are honored.  */
+#define TCB_ALIGNMENT		32
 
 
 /* Location of current stack frame.  */

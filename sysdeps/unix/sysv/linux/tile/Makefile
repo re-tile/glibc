@@ -19,15 +19,8 @@ sysdep_routines += set_dataplane
 endif
 
 ifeq ($(subdir),elf)
-sysdep_routines += dl-vdso
 ifeq ($(build-shared),yes)
 # This is needed for DSO loading from static binaries.
 sysdep-dl-routines += dl-static
 endif
-endif
-
-ifeq ($(subdir),nptl)
-# pull in __syscall_error routine
-libpthread-routines += sysdep
-libpthread-shared-only-routines += sysdep
 endif

@@ -18,11 +18,23 @@
 
 #include <asm/unistd.h>
 #include <sysdeps/tile/sysdep.h>
-#include <sysdeps/unix/sysv/linux/generic/sysdep.h>
+#include <sysdeps/unix/sysdep.h>
+#include <sysdeps/unix/sysv/linux/sysdep.h>
 #include <sys/syscall.h>
 
 #undef SYS_ify
 #define SYS_ify(syscall_name)	__NR_##syscall_name
+
+/* The TILE-Gx kernel exports its vDSO functions under the LINUX_2.6
+   version (the chip predates the per-arch version bumps newer ports use).
+   The generic dl-vdso-setup machinery binds these from these macros.  */
+#if defined SHARED && !defined __ASSEMBLER__
+# define VDSO_NAME	"LINUX_2.6"
+# define VDSO_HASH	61765110
+
+# define HAVE_GETTIMEOFDAY_VSYSCALL	"__vdso_gettimeofday"
+# define HAVE_CLOCK_GETTIME_VSYSCALL	"__vdso_clock_gettime"
+#endif
 
 
 #ifdef __ASSEMBLER__
@@ -78,116 +90,115 @@
 
 #include <errno.h>
 
-/* Define a macro which expands inline into the wrapper code for a system
-   call.  */
-# undef INLINE_SYSCALL
-# define INLINE_SYSCALL(name, nr, args...)                              \
-  ({                                                                    \
-    INTERNAL_SYSCALL_DECL (_sc_err);                                    \
-    unsigned long _sc_val = INTERNAL_SYSCALL (name, _sc_err, nr, args); \
-    if (__builtin_expect (INTERNAL_SYSCALL_ERROR_P (_sc_val, _sc_err), 0)) \
-    {                                                                   \
-      __set_errno (INTERNAL_SYSCALL_ERRNO (_sc_val, _sc_err));          \
-      _sc_val = -1;                                                     \
-    }                                                                   \
-    (long) _sc_val;                                                     \
-  })
+/* The Y2038 time64 syscall wrappers (sigtimedwait, ppoll, ...) use
+   struct __timespec64 in their signatures.  For a 64-bit-time arch it is
+   just an alias for struct timespec, defined here; pulling it in via the
+   syscall sysdep guarantees the alias is visible before any wrapper body,
+   which the tile include chain does not otherwise reach.  */
+#include <struct___timespec64.h>
+
+/* Likewise pull in the C11 atomic_load_relaxed / atomic_store_relaxed
+   helpers; several syscall-adjacent files (arc4random, ...) use them
+   without an explicit <atomic.h>, relying on a transitive include the
+   tile chain does not otherwise provide.  */
+#if !IS_IN (rtld)
+# include <atomic.h>
+#endif
+
+/* The TILE-Gx Linux kernel signals a failed system call by setting r1
+   to the (positive) errno, leaving the raw result in r0.  Modern glibc
+   wants INTERNAL_SYSCALL to return the negative errno directly, as the
+   generic mechanisms here (INTERNAL_SYSCALL_ERROR_P, INTERNAL_SYSCALL_ERRNO,
+   INLINE_SYSCALL in sysdeps/unix/sysv/linux/sysdep.h) test for that.  We
+   therefore fold the r1 flag into the return value, exactly as the mips
+   port does with its $a3 error register.  */
 
 #undef INTERNAL_SYSCALL
-#define INTERNAL_SYSCALL(name, err, nr, args...)        \
-  internal_syscall##nr (SYS_ify (name), err, args)
+#define INTERNAL_SYSCALL(name, nr, args...)             \
+  internal_syscall##nr (SYS_ify (name), args)
 
 #undef INTERNAL_SYSCALL_NCS
-#define INTERNAL_SYSCALL_NCS(number, err, nr, args...)  \
-  internal_syscall##nr (number, err, args)
+#define INTERNAL_SYSCALL_NCS(number, nr, args...)       \
+  internal_syscall##nr (number, args)
 
-#undef INTERNAL_SYSCALL_DECL
-#define INTERNAL_SYSCALL_DECL(err) int err
-
-#undef INTERNAL_SYSCALL_ERROR_P
-#define INTERNAL_SYSCALL_ERROR_P(val, err) ({ (void) (val); (err) != 0; })
-
-#undef INTERNAL_SYSCALL_ERRNO
-#define INTERNAL_SYSCALL_ERRNO(val, err) ({ (void) (val); (err); })
-
-#define internal_syscall0(num, err, dummy...)                           \
+#define internal_syscall0(num, dummy...)                                \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num)                                                     \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
-#define internal_syscall1(num, err, arg0)                               \
+#define internal_syscall1(num, arg0)                                    \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num), "R00" (arg0)                                       \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
-#define internal_syscall2(num, err, arg0, arg1)                         \
+#define internal_syscall2(num, arg0, arg1)                              \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num), "R00" (arg0), "R01" (arg1)                         \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
-#define internal_syscall3(num, err, arg0, arg1, arg2)                   \
+#define internal_syscall3(num, arg0, arg1, arg2)                        \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num), "R00" (arg0), "R01" (arg1), "R02" (arg2)           \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
-#define internal_syscall4(num, err, arg0, arg1, arg2, arg3)             \
+#define internal_syscall4(num, arg0, arg1, arg2, arg3)                  \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num), "R00" (arg0), "R01" (arg1), "R02" (arg2),          \
         "R03" (arg3)                                                    \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
-#define internal_syscall5(num, err, arg0, arg1, arg2, arg3, arg4)       \
+#define internal_syscall5(num, arg0, arg1, arg2, arg3, arg4)            \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num), "R00" (arg0), "R01" (arg1), "R02" (arg2),          \
         "R03" (arg3), "R04" (arg4)                                      \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
-#define internal_syscall6(num, err, arg0, arg1, arg2, arg3, arg4, arg5) \
+#define internal_syscall6(num, arg0, arg1, arg2, arg3, arg4, arg5)      \
   ({                                                                    \
-    long _sys_result, __SYSCALL_CLOBBER_DECLS;                          \
+    long _sys_result, _sys_err, __SYSCALL_CLOBBER_DECLS;                \
     __asm__ __volatile__ (                                              \
       "swint1"                                                          \
-      : "=R00" (_sys_result), "=R01" (err), __SYSCALL_CLOBBER_OUTPUTS   \
+      : "=R00" (_sys_result), "=R01" (_sys_err), __SYSCALL_CLOBBER_OUTPUTS \
       : "R10" (num), "R00" (arg0), "R01" (arg1), "R02" (arg2),          \
         "R03" (arg3), "R04" (arg4), "R05" (arg5)                        \
       : __SYSCALL_CLOBBERS);                                            \
-    _sys_result;                                                        \
+    _sys_err != 0 ? -_sys_err : _sys_result;                            \
   })
 
 #undef __SYSCALL_CLOBBERS
@@ -206,38 +217,4 @@
   "=R02" (_clobber_r2), "=R03" (_clobber_r3), "=R04" (_clobber_r4),     \
     "=R05" (_clobber_r5), "=R10" (_clobber_r10)
 
-
-#define INTERNAL_VSYSCALL_CALL(funcptr, err, nr, args...)               \
-  ({                                                                    \
-    struct syscall_return_value _sc_rv = funcptr (args);                \
-    err = _sc_rv.error;                                                 \
-    _sc_rv.value;                                                       \
-  })
-
-/* List of system calls which are supported as vsyscalls.  */
-#define HAVE_CLOCK_GETTIME_VSYSCALL	1
-#define HAVE_GETTIMEOFDAY_VSYSCALL	1
-
-/* Previously tile used the generic version without the libc_hidden_def
-   which lead in a non existent __send symbol in libc.so.  */
-#undef HAVE_INTERNAL_SEND_SYMBOL
-
 #endif /* __ASSEMBLER__  */
-
-/* Pointer mangling support.  */
-#if IS_IN (rtld)
-/* We cannot use the thread descriptor because in ld.so we use setjmp
-   earlier than the descriptor is initialized.  */
-#else
-# ifdef __ASSEMBLER__
-#  define PTR_MANGLE(reg, tmpreg) \
-	ADDLI_PTR tmpreg, pt, POINTER_GUARD; \
-	LD	tmpreg, tmpreg; \
-	xor	reg, tmpreg, reg
-#  define PTR_DEMANGLE(reg, tmpreg) PTR_MANGLE (reg, tmpreg)
-# else
-#  define PTR_MANGLE(var) \
-  (var) = (__typeof (var)) ((uintptr_t) (var) ^ THREAD_GET_POINTER_GUARD ())
-#  define PTR_DEMANGLE(var)	PTR_MANGLE (var)
-# endif
-#endif

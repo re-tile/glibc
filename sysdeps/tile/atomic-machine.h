@@ -47,7 +47,10 @@ typedef uintmax_t uatomic_max_t;
 # define __HAVE_64B_ATOMICS 0
 #endif
 
-#define USE_ATOMIC_COMPILER_BUILTINS 0
+/* GCC's __atomic_* builtins drive the generic C11 atomic_load_relaxed /
+   atomic_store_relaxed / fetch helpers that modern glibc requires; the
+   tile-native __insn_* fast paths below still provide the acq/rel forms.  */
+#define USE_ATOMIC_COMPILER_BUILTINS 1
 #define ATOMIC_EXCHANGE_USES_CAS 0
 
 /* Pick appropriate 8- or 4-byte instruction. */

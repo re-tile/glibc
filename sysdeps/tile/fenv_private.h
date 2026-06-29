@@ -1,5 +1,7 @@
-#ifndef TILE_MATH_PRIVATE_H
-#define TILE_MATH_PRIVATE_H 1
+#ifndef TILE_FENV_PRIVATE_H
+#define TILE_FENV_PRIVATE_H 1
+
+#include <fenv.h>
 
 /* Internally, we suppress any use of exception or rounding other
    than what is supported by the hardware.  This does mean that some
@@ -15,7 +17,7 @@
    success in every case.
 
    The overrides for libc_ functions must happen before we include
-   the generic math_private.h, and the overrides for regular
+   the generic fenv_private.h, and the overrides for regular
    <fenv.h> functions must happen afterwards, to avoid clashing with
    the declarations of those functions.  */
 
@@ -24,7 +26,7 @@
 #define libc_feholdexcept_setround(env, exc)	({ (void) (env); 0; })
 #define libc_feupdateenv_test(env, exc)		({ (void) (env); 0; })
 
-#include_next <math_private.h>
+#include_next <fenv_private.h>
 
 #define feraiseexcept(excepts)			({ 0; })
 #define __feraiseexcept(excepts)		({ 0; })

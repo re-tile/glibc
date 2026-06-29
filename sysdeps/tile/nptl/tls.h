@@ -78,7 +78,7 @@ typedef struct
    + ((sizeof (tcbhead_t) + TLS_TCB_ALIGN - 1) & ~(TLS_TCB_ALIGN - 1)))
 
 /* Return the thread descriptor (tp) for the current thread.  */
-register void *__thread_pointer asm ("tp");
+register void *__tp_reg asm ("tp");
 
 /* The thread pointer (in hardware register tp) points to the end of
    the TCB.  The pthread_descr structure is immediately in front of the TCB.  */
@@ -97,7 +97,7 @@ register void *__thread_pointer asm ("tp");
 
 /* Code to initially initialize the thread pointer (tp).  */
 # define TLS_INIT_TP(tcbp) \
-    (__thread_pointer = (char *)(tcbp) + TLS_TCB_OFFSET, NULL)
+    (__tp_reg = (char *)(tcbp) + TLS_TCB_OFFSET, NULL)
 
 /* Value passed to 'clone' for initialization of the thread register.  */
 # define TLS_DEFINE_INIT_TP(tp, pd) \
@@ -105,11 +105,11 @@ register void *__thread_pointer asm ("tp");
 
 /* Return the address of the dtv for the current thread.  */
 # define THREAD_DTV() \
-    (((tcbhead_t *) (__thread_pointer - TLS_TCB_OFFSET))[-1].dtv)
+    (((tcbhead_t *) (__tp_reg - TLS_TCB_OFFSET))[-1].dtv)
 
 /* Return the thread descriptor for the current thread.  */
 # define THREAD_SELF \
-    ((struct pthread *) (__thread_pointer \
+    ((struct pthread *) (__tp_reg \
 			 - TLS_TCB_OFFSET - TLS_PRE_TCB_SIZE))
 
 /* Magic for libthread_db to know how to do THREAD_SELF.  */
@@ -133,17 +133,17 @@ register void *__thread_pointer asm ("tp");
 
 /* Set the stack guard field in TCB head.  */
 # define THREAD_SET_STACK_GUARD(value) \
-    (((tcbhead_t *) ((char *) __thread_pointer				      \
+    (((tcbhead_t *) ((char *) __tp_reg				      \
 		     - TLS_TCB_OFFSET))[-1].stack_guard = (value))
 # define THREAD_COPY_STACK_GUARD(descr) \
     (((tcbhead_t *) ((char *) (descr)					      \
 		     + TLS_PRE_TCB_SIZE))[-1].stack_guard		      \
-     = ((tcbhead_t *) ((char *) __thread_pointer			      \
+     = ((tcbhead_t *) ((char *) __tp_reg			      \
 		       - TLS_TCB_OFFSET))[-1].stack_guard)
 
 /* Set the pointer guard field in TCB head.  */
 # define THREAD_GET_POINTER_GUARD() \
-    (((tcbhead_t *) ((char *) __thread_pointer				      \
+    (((tcbhead_t *) ((char *) __tp_reg				      \
 		     - TLS_TCB_OFFSET))[-1].pointer_guard)
 # define THREAD_SET_POINTER_GUARD(value) \
     (THREAD_GET_POINTER_GUARD () = (value))
