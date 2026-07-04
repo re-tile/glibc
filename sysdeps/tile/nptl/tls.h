@@ -95,9 +95,11 @@ register void *__tp_reg asm ("tp");
 /* Return dtv of given thread descriptor.  */
 # define GET_DTV(tcbp)	(((tcbhead_t *) (tcbp))[-1].dtv)
 
-/* Code to initially initialize the thread pointer (tp).  */
+/* Code to initially initialize the thread pointer (tp).  Must yield true on
+   success: glibc >= 2.34 aborts startup when TLS_INIT_TP is falsy (the pre-2.34
+   port returned NULL here).  */
 # define TLS_INIT_TP(tcbp) \
-    (__tp_reg = (char *)(tcbp) + TLS_TCB_OFFSET, NULL)
+    (__tp_reg = (char *)(tcbp) + TLS_TCB_OFFSET, true)
 
 /* Value passed to 'clone' for initialization of the thread register.  */
 # define TLS_DEFINE_INIT_TP(tp, pd) \
