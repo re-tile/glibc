@@ -108,8 +108,13 @@ ENTRY (__clone)
 	 move r31, r3
 	 move r3, r6
 	}
+	/* Carry the tls pointer (libc r5) into the child in r30 so the child
+	   can install its own thread pointer in .Lthread_start.  The child
+	   never uses the flags value that historically lived in r30, and the
+	   kernel already has the flags in r0.  This does not rely on the
+	   kernel honoring CLONE_SETTLS for the new thread's tp register.  */
 	{
-	 move r30, r2
+	 move r30, r5
 	 move r2, r4
 	}
 	{
@@ -155,13 +160,18 @@ ENTRY (__clone)
 /* This function expects to receive:
 
    sp: the top of a valid stack area
-   r30: clone() flags
+   r30: the tls pointer to install as this thread's thread pointer
    r31: the argument to pass to the user function
    r32: the user function pointer  */
 
 .Lthread_start:
 	cfi_def_cfa_offset (FRAME_SIZE)
 	cfi_undefined (lr)
+	/* Install the thread pointer for the new thread.  The tp register is
+	   normally set up by the kernel from the CLONE_SETTLS tls argument,
+	   but we install it here from r30 as well so a correct thread pointer
+	   does not depend on that path.  */
+	move tp, r30
 	{
 	 /* Invoke user function with specified argument. */
 	 move r0, r31
