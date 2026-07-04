@@ -16,7 +16,13 @@
    License along with the GNU C Library.  If not, see
    <http://www.gnu.org/licenses/>.  */
 
-#include <asm/unistd.h>
+/* Do not pull in the kernel <asm/unistd.h>.  Modern glibc treats
+   <arch-syscall.h> (reached through the internal <sys/syscall.h> wrapper
+   below) as the authoritative syscall-number list; the kernel header spells
+   the __NR3264_*-indirected numbers and __NR_cacheflush as expressions
+   rather than literals, so including it here would redefine them (identical
+   values, different token spelling) and trip -Werror.  riscv/loongarch omit
+   it for the same reason.  */
 #include <sysdeps/tile/sysdep.h>
 #include <sysdeps/unix/sysdep.h>
 #include <sysdeps/unix/sysv/linux/sysdep.h>

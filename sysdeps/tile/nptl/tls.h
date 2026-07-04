@@ -169,8 +169,9 @@ register void *__tp_reg asm ("tp");
       atomic_write_barrier ();						     \
     }									     \
   while (0)
-#define THREAD_GSCOPE_WAIT() \
-  GL(dl_wait_lookup_done) ()
+/* THREAD_GSCOPE_WAIT is provided generically by <ldsodefs.h> now
+   (__thread_gscope_wait), so tile no longer defines it here, matching
+   riscv/aarch64.  */
 
 #endif /* __ASSEMBLER__ */
 

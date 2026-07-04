@@ -23,7 +23,6 @@
 #define _ERRNO_H 1
 #include <bits/errno.h>
 
-#include <asm/unistd.h>
 #include <arch/abi.h>
 #include <tls.h>
 #include <linux/sched.h>
