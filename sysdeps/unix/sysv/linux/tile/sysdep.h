@@ -220,4 +220,8 @@
   "=R02" (_clobber_r2), "=R03" (_clobber_r3), "=R04" (_clobber_r4),     \
     "=R05" (_clobber_r5), "=R10" (_clobber_r10)
 
+/* The 2.12 tile ABI exports ___brk_addr.  */
+#undef HAVE_INTERNAL_BRK_ADDR_SYMBOL
+#define HAVE_INTERNAL_BRK_ADDR_SYMBOL 1
+
 #endif /* __ASSEMBLER__  */

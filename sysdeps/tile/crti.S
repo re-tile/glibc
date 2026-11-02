@@ -58,6 +58,7 @@
 	.section .init,"ax",@progbits
 	.align 8
 	.globl _init
+	.hidden _init
 	.type _init, @function
 _init:
 	{
@@ -102,6 +103,7 @@ _init:
 	.section .fini,"ax",@progbits
 	.align 8
 	.globl _fini
+	.hidden _fini
 	.type _fini, @function
 _fini:
 	{

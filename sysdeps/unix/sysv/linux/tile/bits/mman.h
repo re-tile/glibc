@@ -34,6 +34,10 @@
 # define MAP_EXECUTABLE	0x01000		/* Mark it as an executable.  */
 # define MAP_POPULATE	0x00040		/* Populate (prefault) pagetables.  */
 # define MAP_HUGETLB	0x04000		/* Create huge page mapping.  */
+# define MAP_SYNC	0x80000		/* Perform synchronous page
+					   faults for the mapping.  */
+# define MAP_FIXED_NOREPLACE 0x100000	/* MAP_FIXED but do not unmap
+					   underlying mapping.  */
 #endif
 
 /* Include generic Linux declarations.  */
