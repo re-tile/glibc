@@ -107,13 +107,17 @@ ENTRY (__clone)
 	 move r31, r3
 	 move r3, r6
 	}
-	/* Carry the tls pointer (libc r5) into the child in r30 so the child
-	   can install its own thread pointer in .Lthread_start.  The child
-	   never uses the flags value that historically lived in r30, and the
-	   kernel already has the flags in r0.  This does not rely on the
-	   kernel honoring CLONE_SETTLS for the new thread's tp register.  */
+	/* Carry the new thread pointer into the child in r30 so the child
+	   can install it in .Lthread_start.  This does not rely on the
+	   kernel honoring CLONE_SETTLS for the new thread's tp register.
+	   Without CLONE_SETTLS the child keeps the parent's tp.  */
+	shrui r11, r0, 19	/* CLONE_SETTLS */
 	{
-	 move r30, r5
+	 andi r11, r11, 1
+	 move r30, tp
+	}
+	{
+	 cmovnez r30, r11, r5
 	 move r2, r4
 	}
 	{
