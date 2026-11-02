@@ -49,8 +49,9 @@
 
 /* For unreachable default cases in switch statements over bitwise OR
    of FP_CLS_* values.  */
-#if (defined __GNUC__							\
-     && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)))
+#if defined __clang__							\
+    || (defined __GNUC__						\
+	&& (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)))
 # define _FP_UNREACHABLE	__builtin_unreachable ()
 #else
 # define _FP_UNREACHABLE	abort ()

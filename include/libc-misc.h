@@ -27,6 +27,8 @@
 #ifdef HAVE_CC_INHIBIT_LOOP_TO_LIBCALL
 # define inhibit_loop_to_libcall \
     __attribute__ ((__optimize__ ("-fno-tree-loop-distribute-patterns")))
+#elif defined __clang__
+# define inhibit_loop_to_libcall __attribute__ ((__no_builtin__))
 #else
 # define inhibit_loop_to_libcall
 #endif
@@ -34,6 +36,8 @@
 #ifdef HAVE_TEST_CC_INHIBIT_LOOP_TO_LIBCALL
 # define test_cc_inhibit_loop_to_libcall \
     __attribute__ ((__optimize__ ("-fno-tree-loop-distribute-patterns")))
+#elif defined __clang__
+# define test_cc_inhibit_loop_to_libcall __attribute__ ((__no_builtin__))
 #else
 # define test_cc_inhibit_loop_to_libcall
 #endif
