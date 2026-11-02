@@ -28,7 +28,7 @@
 #define _STACK_GROWS_DOWN	1
 
 /* Default to a non-executable stack. */
-#define DEFAULT_STACK_PERMS (PF_R|PF_W)
+#define DEFAULT_STACK_PROT_PERMS (PROT_READ|PROT_WRITE)
 
 /* Access to the stack pointer.  The macros are used in alloca_account
    for which they need to act as barriers as well, hence the additional
