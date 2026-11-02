@@ -32,7 +32,6 @@ END(_setjmp)
 libc_hidden_def (_setjmp)
 
 ENTRY(__sigsetjmp)
-	FEEDBACK_ENTER(__sigsetjmp)
 1:
 	move r2, r0
 

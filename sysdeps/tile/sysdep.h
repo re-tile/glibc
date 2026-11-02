@@ -22,8 +22,6 @@
 
 #if defined __ASSEMBLER__ || defined REQUEST_ASSEMBLER_MACROS
 
-#include <feedback.h>
-
 /* Make use of .size directive.  */
 #define ASM_SIZE_DIRECTIVE(name) .size name,.-name;
 

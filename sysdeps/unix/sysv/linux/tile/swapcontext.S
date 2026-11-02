@@ -24,7 +24,6 @@
 
 	.text
 ENTRY (__swapcontext)
-	FEEDBACK_ENTER(__swapcontext)
 	/* Set up a frame and save r0 and r1.  */
 	{
 	 st sp, lr

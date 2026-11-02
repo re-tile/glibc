@@ -30,7 +30,6 @@
 
 	.text
 ENTRY (__setcontext)
-	FEEDBACK_ENTER(__setcontext)
 
 	/* See if this is a true signal context (flags == 0).
 	   If so, restore by invoking rt_sigreturn().  */
@@ -191,7 +190,6 @@ weak_alias (__setcontext, setcontext)
 
 ENTRY (__startcontext)
 	cfi_undefined (lr)
-	FEEDBACK_ENTER(__startcontext)
 	jalr r31
 	beqz r30, 1f
 	{

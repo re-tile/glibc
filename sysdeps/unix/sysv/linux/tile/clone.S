@@ -25,7 +25,6 @@
 
 #include <arch/abi.h>
 #include <tls.h>
-#include <linux/sched.h>
 
 /* What we save where in the stack frame; must include all callee-saves. */
 #define FRAME_NEXT_LR   (0 * REGSIZE)  /* reserved by ABI; not used here */

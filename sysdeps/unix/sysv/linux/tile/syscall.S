@@ -21,7 +21,6 @@
 
 	.text
 ENTRY (syscall)
-	FEEDBACK_ENTER(syscall)
 	{ move TREG_SYSCALL_NR_NAME, r0; move r0, r1 }
 	{ move r1, r2; move r2, r3 }
 	{ move r3, r4; move r4, r5 }

@@ -31,7 +31,6 @@
 
 	.text
 ENTRY (__syscall_cancel_arch)
-	FEEDBACK_ENTER(__syscall_cancel_arch)
 
 	.globl __syscall_cancel_arch_start
 __syscall_cancel_arch_start:

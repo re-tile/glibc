@@ -20,7 +20,6 @@
 
 	.text
 ENTRY(__bzero)
-	FEEDBACK_ENTER(__bzero)
 	{
 	 move r2, r1
 	 move r1, zero

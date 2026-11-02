@@ -29,7 +29,6 @@
 
 	.text
 ENTRY (__ioctl)
-	FEEDBACK_ENTER(__ioctl)
 	{
 	 addxi r1, r1, 0
 	 moveli TREG_SYSCALL_NR_NAME, __NR_ioctl

@@ -26,7 +26,6 @@
 
 	.text
 ENTRY (__longjmp)
-	FEEDBACK_ENTER(__longjmp)
 
 #define RESTORE(r) { ld r, r0 ; ADDI_PTR r0, r0, REGSIZE }
 	FOR_EACH_CALLEE_SAVED_REG(RESTORE)

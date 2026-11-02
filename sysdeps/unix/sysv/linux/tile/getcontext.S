@@ -25,7 +25,6 @@
 
 	.text
 ENTRY (__getcontext)
-	FEEDBACK_ENTER(__getcontext)
 
 	/* Save the callee-saved GPRs.  There's no need to save the
 	   caller-saved GPRs since the eventual setcontext() or
